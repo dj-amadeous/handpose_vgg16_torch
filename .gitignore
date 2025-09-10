@@ -3,3 +3,4 @@ feature_tensor.txt
 /External*
 /Scratches*
 *.iml
+/venv
