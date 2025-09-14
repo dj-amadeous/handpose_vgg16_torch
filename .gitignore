@@ -5,3 +5,4 @@ feature_tensor.txt
 *.iml
 /venv
 .idea
+*.pt
