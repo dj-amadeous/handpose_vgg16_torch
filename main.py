@@ -57,11 +57,11 @@ val_len = int(len(full_dataset)*VAL_FRACTION)
 train_len = len(full_dataset) - val_len
 train_ds, val_ds = random_split(full_dataset, lengths=[train_len, val_len],
                                 generator=torch.Generator().manual_seed(SEED))
-train_loader = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=2,
+train_loader = DataLoader(train_ds, batch_size=32, shuffle=True, num_workers=0,
                           pin_memory=(DEVICE.type == "cuda"))
-val_loader = DataLoader(val_ds, batch_size=32, shuffle=True, num_workers=2,
+val_loader = DataLoader(val_ds, batch_size=32, shuffle=True, num_workers=0,
                         pin_memory=(DEVICE.type == "cuda"))
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=True, num_workers=-1,
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=True, num_workers=0,
                         pin_memory=(DEVICE.type == "cuda"))
 
 
@@ -71,16 +71,16 @@ optimizer = torch.optim.Adam(trainable_params, lr=1e-3, weight_decay=1e-4)
 loss_fn = nn.MSELoss()
 best_val_loss = float("inf")
 epochs_no_improve = 0
-
+start = time.time()
 for epoch in range(1, EPOCHS + 1):
-    start = time.time()
     print("check it out")
     print(f"{time.time() - start} seconds")
+    start = time.time()
     model.train()
     run_loss, n_batches = 0.0, 0
     for ims, target in train_loader:
         ims = ims.to(DEVICE)
-        targets = _ensure_targets_shape_dtype(targets)
+        targets = _ensure_targets_shape_dtype(target)
 
         preds = model(ims)
         loss = loss_fn(preds, targets)
@@ -91,9 +91,10 @@ for epoch in range(1, EPOCHS + 1):
 
         run_loss += loss.item()
         n_batches += 1
-        print(f"Epoch {epoch}/{EPOCHS}  |  train MSE: {train_mse:.6f}  |  val MSE: {val_mse:.6f}")
     train_mse = run_loss / max(n_batches, 1)
     val_mse = evaluate(val_loader)
+    print(f"Epoch {epoch}/{EPOCHS}  |  train MSE: {train_mse:.6f}  |  val MSE: {val_mse:.6f}")
+
 
     # Save best-on-validation
     if val_mse < best_val_loss - 1e-8:  # tiny epsilon to avoid float jitter
